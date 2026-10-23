@@ -1,6 +1,6 @@
 // Çevrimdışı çalışma: dosyalar önbellekten gelir, arka planda güncellenir.
 // Dosya listesi değişince VERSION'ı artır.
-const VERSION = 'slot-v2';
+const VERSION = 'slot-v3';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/logic/common.js', 'js/logic/tumble.js', 'js/logic/megaways.js', 'js/logic/book.js', 'js/logic/classic.js',

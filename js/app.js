@@ -97,6 +97,47 @@
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
+  // Gizli admin paneli: bakiyeye 2 saniye içinde 5 kez dokun
+  let taps = [];
+  document.querySelector('.balance').addEventListener('click', () => {
+    const now = Date.now();
+    taps = taps.filter((t) => now - t < 2000).concat(now);
+    if (taps.length >= 5) { taps = []; openAdmin(); }
+  });
+
+  function openAdmin() {
+    if (shell && (shell.busy || shell.fs)) { toast('Dönüş bitince açabilirsin'); return; }
+    Sound.play('click');
+    modal({
+      title: '🛠️ Admin',
+      html: `<label class="adm-label">Bakiye</label>
+        <input class="adm-input" type="text" inputmode="numeric" value="${Store.data.balance}">
+        <div class="adm-quick">
+          ${[10000, 100000, 1000000].map((v) => `<button class="pill" data-add="${v}">+${fmt(v)}</button>`).join('')}
+          <button class="pill" data-set="0">Sıfır</button>
+        </div>
+        <button class="link adm-daily">Günlük hediyeyi yeniden aç</button>`,
+      buttons: [{ label: 'Vazgeç', value: null, cls: 'ghost' }, { label: 'Kaydet', value: 'save', cls: 'gold' }],
+      onOpen(m, close) {
+        const input = m.querySelector('.adm-input');
+        const num = () => parseInt(input.value.replace(/\D/g, ''), 10) || 0;
+        m.querySelectorAll('[data-add]').forEach((b) => { b.onclick = () => { input.value = num() + +b.dataset.add; }; });
+        m.querySelector('[data-set]').onclick = () => { input.value = 0; };
+        m.querySelector('.adm-daily').onclick = () => {
+          Store.data.lastDaily = null; Store.save(); toast('Günlük hediye yeniden alınabilir');
+          if (!shell) lobby();
+        };
+        m.querySelector('.btn.gold').onclick = () => {
+          Store.setBalance(num());
+          toast(`Bakiye: ${fmt(Store.data.balance)}`);
+          close('save');
+        };
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') m.querySelector('.btn.gold').click(); });
+        setTimeout(() => input.select(), 50);
+      },
+    });
+  }
+
   refreshTop();
   const start = location.hash.slice(1);
   if (start) open(start); else lobby();

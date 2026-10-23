@@ -31,6 +31,7 @@
     canBet: (n) => data.balance >= n,
     sub(n) { data.balance -= n; emit(); },
     add(n) { if (n) { data.balance += n; emit(); } },
+    setBalance(n) { data.balance = Math.max(0, Math.floor(n)); emit(); },
     dailyReady: () => data.lastDaily !== today(),
     claimDaily() {
       if (!Store.dailyReady()) return 0;
@@ -108,7 +109,7 @@
   }
 
   // Basit modal: buttons [{label, value, cls}] → seçilen değerle çözülür
-  function modal({ title = '', html = '', buttons = [{ label: 'Tamam', value: true }], cls = '', dismiss = true }) {
+  function modal({ title = '', html = '', buttons = [{ label: 'Tamam', value: true }], cls = '', dismiss = true, onOpen = null }) {
     return new Promise((resolve) => {
       const m = el(`<div class="modal-back ${cls}"><div class="modal">
         ${title ? `<h3>${title}</h3>` : ''}<div class="modal-body">${html}</div>
@@ -123,8 +124,7 @@
       if (dismiss) m.addEventListener('click', (e) => { if (e.target === m) close(null); });
       document.body.appendChild(m);
       requestAnimationFrame(() => m.classList.add('show'));
-      m.api = { close, el: m };
-      if (modal.onOpen) modal.onOpen(m);
+      if (onOpen) onOpen(m, close);
     });
   }
 

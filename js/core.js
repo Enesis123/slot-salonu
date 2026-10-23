@@ -10,13 +10,17 @@
 
   const defaults = () => ({
     balance: START_BALANCE, lastDaily: null, jackpot: JACKPOT_SEED,
-    sound: true, turbo: false, bets: {},
+    sfxVol: 0.8, musicVol: 0.5, turbo: false, bets: {},
     stats: { spins: 0, wagered: 0, won: 0, biggest: 0, biggestGame: '', jackpots: 0 },
   });
 
   let data;
   try { data = Object.assign(defaults(), JSON.parse(localStorage.getItem(KEY) || '{}')); }
   catch (e) { data = defaults(); }
+
+  // Eski sürümdeki aç/kapa ses ayarını yeni ses seviyelerine çevir
+  if (data.sound === false) { data.sfxVol = 0; data.musicVol = 0; }
+  delete data.sound;
 
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* gizli pencere: kayıt yok */ }
@@ -57,7 +61,7 @@
       if (n > data.stats.biggest) { data.stats.biggest = n; data.stats.biggestGame = game; }
       emit();
     },
-    resetAll() { const keep = { sound: data.sound, turbo: data.turbo }; Object.assign(data, defaults(), keep); emit(); },
+    resetAll() { const keep = { sfxVol: data.sfxVol, musicVol: data.musicVol, turbo: data.turbo }; Object.assign(data, defaults(), keep); emit(); },
   };
 
   // Ortak jackpot: her bahsin %1.5'i havuza girer, şans bahisle orantılı
@@ -70,14 +74,15 @@
 
   // Sentezlenmiş sesler — dosya yok, WebAudio ile anlık üretiliyor.
   // Hepsi ortak bir çıkışa (sıkıştırıcı) ve yankı odasına gider; böylece daha dolgun duyulur.
-  let ctx = null, out = null, wet = null, noiseBuf = null;
+  // İki kanal: efekt ve müzik; ikisinin de kendi ses seviyesi ve yankı odası var
+  let ctx = null, noiseBuf = null;
+  const bus = {};
   function ac() {
     if (!ctx) {
       try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
       const comp = ctx.createDynamicsCompressor();
       comp.threshold.value = -14; comp.ratio.value = 4;
-      out = ctx.createGain(); out.gain.value = 0.9;
-      out.connect(comp).connect(ctx.destination);
+      comp.connect(ctx.destination);
       // Yapay yankı: sönümlenen gürültüden üretilmiş oda tepkisi
       const len = ctx.sampleRate * 1.8;
       const ir = ctx.createBuffer(2, len, ctx.sampleRate);
@@ -85,9 +90,15 @@
         const d = ir.getChannelData(ch);
         for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
       }
-      const rev = ctx.createConvolver(); rev.buffer = ir;
-      wet = ctx.createGain(); wet.gain.value = 0.28;
-      wet.connect(rev).connect(out);
+      for (const name of ['sfx', 'music']) {
+        const out = ctx.createGain();
+        out.connect(comp);
+        const rev = ctx.createConvolver(); rev.buffer = ir;
+        const wet = ctx.createGain(); wet.gain.value = name === 'music' ? 0.35 : 0.28;
+        wet.connect(rev).connect(out);
+        bus[name] = { out, wet };
+      }
+      applyVolumes();
       noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
       const nd = noiseBuf.getChannelData(0);
       for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
@@ -96,13 +107,20 @@
     return ctx;
   }
 
-  function route(node, send) {
-    node.connect(out);
-    if (send) { const s = ctx.createGain(); s.gain.value = send; node.connect(s).connect(wet); }
+  function applyVolumes() {
+    if (!ctx) return;
+    bus.sfx.out.gain.setTargetAtTime(data.sfxVol, ctx.currentTime, 0.05);
+    bus.music.out.gain.setTargetAtTime(data.musicVol * 0.7, ctx.currentTime, 0.05);
+  }
+
+  function route(node, send, which = 'sfx') {
+    const b = bus[which];
+    node.connect(b.out);
+    if (send) { const s = ctx.createGain(); s.gain.value = send; node.connect(s).connect(b.wet); }
   }
 
   // Tek nota: yumuşak atak, üstel sönüm, istenirse kayma/filtre/yankı
-  function tone(freq, dur, { type = 'sine', vol = 0.15, at = 0, slide = 0, attack = 0.005, send = 0.25, cutoff = 0, detune = 0 } = {}) {
+  function tone(freq, dur, { type = 'sine', vol = 0.15, at = 0, slide = 0, attack = 0.005, send = 0.25, cutoff = 0, detune = 0, to = 'sfx', vibrato = 0 } = {}) {
     const a = ac(); if (!a) return;
     const t = a.currentTime + at;
     const o = a.createOscillator(), g = a.createGain();
@@ -110,6 +128,12 @@
     o.detune.value = detune;
     o.frequency.setValueAtTime(freq, t);
     if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t + dur);
+    if (vibrato) {
+      const lfo = a.createOscillator(), lg = a.createGain();
+      lfo.frequency.value = 5.5; lg.gain.value = freq * vibrato;
+      lfo.connect(lg).connect(o.frequency);
+      lfo.start(t); lfo.stop(t + dur + 0.05);
+    }
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
@@ -119,12 +143,12 @@
       o.connect(f); last = f;
     }
     last.connect(g);
-    route(g, send);
+    route(g, send, to);
     o.start(t); o.stop(t + dur + 0.05);
   }
 
   // Filtrelenmiş gürültü: hışırtı, vuuş, çıtırtı
-  function noise(dur, { at = 0, vol = 0.1, type = 'bandpass', from = 1000, to = 0, q = 1, send = 0.2 } = {}) {
+  function noise(dur, { at = 0, vol = 0.1, type = 'bandpass', from = 1000, to = 0, q = 1, send = 0.2, bus: which = 'sfx' } = {}) {
     const a = ac(); if (!a) return;
     const t = a.currentTime + at;
     const s = a.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
@@ -136,7 +160,7 @@
     g.gain.exponentialRampToValueAtTime(vol, t + Math.min(0.03, dur / 3));
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     s.connect(f).connect(g);
-    route(g, send);
+    route(g, send, which);
     s.start(t); s.stop(t + dur + 0.05);
   }
 
@@ -213,8 +237,105 @@
     },
     spot: () => tone(midi(88 + PENTA[Math.floor(Math.random() * 5)]), 0.25, { type: 'sine', vol: 0.05, send: 0.5 }),
   };
+  // ——— Müzik: kodla üretilen döngüler (dosya yok, telif yok) ———
+  // Her tema: tempo, 4 ölçülük akor dizisi, melodi gamı ve davul deseni. 16'lık adımlarla önden planlanır.
+  const M = (n, t, dur, o = {}) => tone(midi(n), dur, { to: 'music', at: Math.max(0, t - ctx.currentTime), ...o });
+  const MN = (t, dur, o = {}) => noise(dur, { bus: 'music', at: Math.max(0, t - ctx.currentTime), send: 0.1, ...o });
+  const INST = {
+    pad: (n, t, d) => { M(n, t, d, { type: 'sawtooth', vol: 0.018, attack: 0.5, cutoff: 900, detune: -7, send: 0.5 }); M(n, t, d, { type: 'sawtooth', vol: 0.018, attack: 0.5, cutoff: 900, detune: 7 }); },
+    softPad: (n, t, d) => M(n, t, d, { type: 'triangle', vol: 0.035, attack: 0.6, send: 0.6 }),
+    pluck: (n, t) => { M(n, t, 0.35, { type: 'triangle', vol: 0.055, send: 0.35 }); M(n + 12, t, 0.18, { type: 'sine', vol: 0.02 }); },
+    bell: (n, t) => [[1, 1], [2.76, 0.4], [5.4, 0.15]].forEach(([k, v]) => tone(midi(n) * k, 0.9 / k, { to: 'music', at: Math.max(0, t - ctx.currentTime), vol: 0.035 * v, send: 0.5 })),
+    flute: (n, t) => M(n, t, 0.5, { type: 'sine', vol: 0.06, attack: 0.06, vibrato: 0.006, send: 0.45 }),
+    oud: (n, t) => M(n, t, 0.3, { type: 'sawtooth', vol: 0.04, cutoff: 1600, send: 0.3 }),
+    chip: (n, t) => M(n, t, 0.12, { type: 'square', vol: 0.025, send: 0.1 }),
+    bass: (n, t, d) => { M(n, t, d, { type: 'sine', vol: 0.16, send: 0 }); M(n, t, d * 0.6, { type: 'triangle', vol: 0.05, send: 0 }); },
+    kick: (t) => M(36, t, 0.22, { type: 'sine', vol: 0.3, slide: 0.45, send: 0 }),
+    snare: (t) => { MN(t, 0.13, { vol: 0.06, from: 1800, q: 0.7 }); M(50, t, 0.08, { type: 'triangle', vol: 0.05, send: 0 }); },
+    hat: (t, v = 0.022) => MN(t, 0.04, { vol: v, type: 'highpass', from: 7500, send: 0 }),
+    shaker: (t) => MN(t, 0.06, { vol: 0.014, type: 'highpass', from: 5000, send: 0 }),
+    tom: (t, n) => M(n, t, 0.3, { type: 'sine', vol: 0.2, slide: 0.6, send: 0.15 }),
+  };
+  const C4 = [[60, 64, 67, 71], [57, 60, 64, 67], [53, 57, 60, 64], [55, 59, 62, 65]];
+  const THEMES = {
+    lobby: { bpm: 84, chords: C4, scale: [72, 74, 76, 79, 81, 84], pad: 'softPad', arp: 'pluck', arpEvery: 4, mel: 'bell', melP: 0.3,
+      drums(s, t, hot) { if (s === 0 || s === 10) INST.kick(t); if (s % 4 === 2) INST.hat(t, 0.015); if (hot && s % 2) INST.hat(t, 0.01); } },
+    candy: { bpm: 116, chords: [[65, 69, 72], [60, 64, 67], [62, 65, 69], [58, 62, 65]], scale: [77, 79, 81, 84, 86, 89], pad: 'softPad', arp: 'pluck', arpEvery: 2, mel: 'bell', melP: 0.45,
+      drums(s, t, hot) { if (s % 4 === 0) INST.kick(t); if (s === 4 || s === 12) INST.snare(t); if (s % 2 === 0) INST.hat(t); if (hot && s % 2) INST.hat(t, 0.012); } },
+    dede: { bpm: 76, chords: [[62, 65, 69], [58, 62, 65], [60, 64, 67], [57, 61, 64]], scale: [74, 76, 77, 79, 81, 83, 86], pad: 'pad', arp: 'bell', arpEvery: 4, mel: 'bell', melP: 0.25,
+      drums(s, t, hot) { if (s === 0) INST.tom(t, 38); if (s === 8 && hot) INST.tom(t, 41); if (s % 4 === 2) INST.shaker(t); if (hot && s % 2 === 0) INST.hat(t, 0.012); } },
+    amazon: { bpm: 100, chords: [[57, 60, 64], [55, 59, 62], [53, 57, 60], [55, 59, 62]], scale: [69, 72, 74, 76, 79, 81], pad: 'softPad', arp: null, mel: 'flute', melP: 0.5,
+      drums(s, t, hot) {
+        const toms = { 0: 41, 3: 45, 6: 41, 8: 38, 10: 45, 13: 48 };
+        if (toms[s]) INST.tom(t, toms[s]);
+        INST.shaker(t);
+        if (hot && (s === 4 || s === 12)) INST.snare(t);
+      } },
+    mine: { bpm: 108, chords: [[57, 60, 64], [55, 59, 62], [53, 57, 60], [52, 56, 59]], scale: [69, 71, 72, 74, 76, 77, 80, 81], pad: 'pad', arp: 'pluck', arpEvery: 2, mel: 'pluck', melP: 0.35,
+      drums(s, t, hot) { if (s === 0 || s === 8 || (hot && s % 4 === 0)) INST.kick(t); if (s === 4 || s === 12) INST.snare(t); if (s % 2 === 0) INST.hat(t); } },
+    book: { bpm: 88, chords: [[52, 56, 59], [53, 57, 60], [52, 56, 59], [50, 53, 57]], scale: [64, 65, 68, 69, 71, 72, 74, 76], pad: 'softPad', arp: null, mel: 'oud', melP: 0.55,
+      drums(s, t, hot) { if (s === 0 || s === 6) INST.tom(t, 43); if (s === 4 || s === 12) MN(t, 0.08, { vol: 0.05, from: 2500, q: 2 }); if (s === 10) INST.tom(t, 48); if (hot && s % 2) INST.shaker(t); } },
+    classic: { bpm: 128, chords: [[60, 64, 67], [57, 60, 64], [53, 57, 60], [55, 59, 62]], scale: [72, 74, 76, 79, 81, 84], pad: null, arp: 'chip', arpEvery: 1, mel: 'chip', melP: 0.4,
+      drums(s, t, hot) { if (s % 4 === 0) INST.kick(t); if (s % 2 === 1) INST.hat(t, 0.015); if (hot && (s === 4 || s === 12)) INST.snare(t); } },
+  };
+  const GAME_THEME = { lobby: 'lobby', rush: 'candy', sweet: 'candy', dede: 'dede', amazon: 'amazon', mine: 'mine', book: 'book', classic: 'classic' };
+
+  const Music = (() => {
+    let theme = null, timer = null, step = 0, nextT = 0, hot = false, melIdx = 2;
+    function playStep(s16, t, spb) {
+      const bar = Math.floor(step / 16) % theme.chords.length;
+      const ch = theme.chords[bar];
+      if (s16 === 0 && theme.pad) ch.forEach((n) => INST[theme.pad](n, t, spb * 16));
+      if (s16 === 0 || s16 === 8 || (hot && s16 % 4 === 0)) INST.bass(ch[0] - 24, t, spb * (hot ? 3.5 : 7));
+      if (theme.arp && s16 % theme.arpEvery === 0) {
+        const i = (s16 / theme.arpEvery) % (ch.length + 1);
+        INST[theme.arp](i < ch.length ? ch[i] + 12 : ch[0] + 24, t);
+      }
+      if (s16 % 2 === 0 && Math.random() < theme.melP * (hot ? 1.3 : 1)) {
+        melIdx = Math.max(0, Math.min(theme.scale.length - 1, melIdx + Math.floor(Math.random() * 5) - 2));
+        INST[theme.mel](theme.scale[melIdx], t);
+      }
+      theme.drums(s16, t, hot);
+    }
+    function tick() {
+      if (!theme || !ctx) return;
+      const spb = 60 / (theme.bpm * (hot ? 1.12 : 1)) / 4;
+      if (data.musicVol <= 0 || ctx.state !== 'running') { nextT = ctx.currentTime + 0.05; return; }
+      if (nextT < ctx.currentTime) nextT = ctx.currentTime + 0.05;
+      while (nextT < ctx.currentTime + 0.15) {
+        try { playStep(step % 16, nextT, spb); } catch (e) { /* ses yok */ }
+        nextT += spb;
+        step++;
+      }
+    }
+    return {
+      play(id) {
+        const next = THEMES[GAME_THEME[id] || 'lobby'];
+        if (!ac()) return;
+        if (theme === next) return;
+        theme = next; step = 0; hot = false; melIdx = 2;
+        nextT = ctx.currentTime + 0.1;
+        if (!timer) timer = setInterval(tick, 30);
+      },
+      setHot(v) { hot = v; },
+    };
+  })();
+
+  // Tarayıcılar sesi ilk dokunuştan önce açtırmıyor; ilk dokunuşta başlat, sekme gizlenince sustur
+  document.addEventListener('pointerdown', () => ac(), { once: true });
+  document.addEventListener('keydown', () => ac(), { once: true });
+  document.addEventListener('visibilitychange', () => {
+    if (!ctx) return;
+    if (document.hidden) ctx.suspend(); else ctx.resume();
+  });
+
   const Sound = {
-    play(name) { if (data.sound && SOUNDS[name]) try { SOUNDS[name](); } catch (e) { /* ses kapalı cihaz */ } },
+    play(name) { if (data.sfxVol > 0 && SOUNDS[name]) try { SOUNDS[name](); } catch (e) { /* ses kapalı cihaz */ } },
+    setVolume(kind, v) {
+      data[kind === 'music' ? 'musicVol' : 'sfxVol'] = v;
+      save();
+      applyVolumes();
+    },
   };
 
   const fmt = (n) => Math.floor(n).toLocaleString('tr-TR');
@@ -311,5 +432,5 @@
     return null;
   }
 
-  window.Core = { Store, Jackpot, Sound, fmt, sleep, el, toast, modal, countUp, coinRain, celebrate, winTier, DAILY_BONUS };
+  window.Core = { Store, Jackpot, Sound, Music, fmt, sleep, el, toast, modal, countUp, coinRain, celebrate, winTier, DAILY_BONUS };
 })();

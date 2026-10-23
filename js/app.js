@@ -1,7 +1,7 @@
 // Lobi, üst çubuk ve oyunlar arası geçiş
 (function () {
   'use strict';
-  const { Store, Jackpot, Sound, fmt, toast, modal, coinRain } = window.Core;
+  const { Store, Jackpot, Sound, Music, fmt, toast, modal, coinRain } = window.Core;
   const { list, GameShell } = window.Games;
   const view = document.getElementById('view');
   const homeBtn = document.getElementById('btnHome');
@@ -18,6 +18,7 @@
   function lobby() {
     if (shell) { shell.destroy(); shell = null; }
     homeBtn.hidden = true;
+    Music.play('lobby');
     if (location.hash) history.replaceState(null, '', location.pathname);
     const s = Store.data.stats;
     const rtp = s.wagered ? ((s.won / s.wagered) * 100).toFixed(1) + '%' : '–';
@@ -50,7 +51,7 @@
         <footer class="foot">
           <span>Gerçek para yok, sadece eğlence. Jetonlar bu tarayıcıda saklanır.</span>
           <span class="foot-btns">
-            <button class="link sound-btn">${Store.data.sound ? '🔊 Ses açık' : '🔇 Ses kapalı'}</button>
+            <button class="link sound-btn">🔊 Ses ayarları</button>
             <button class="link reset-btn">Sıfırla</button>
           </span>
         </footer>
@@ -60,7 +61,7 @@
       const got = Store.claimDaily();
       if (got) { Sound.play('big'); coinRain(30); toast(`+${fmt(got)} jeton!`); lobby(); }
     };
-    view.querySelector('.sound-btn').onclick = () => { Store.data.sound = !Store.data.sound; Store.save(); lobby(); };
+    view.querySelector('.sound-btn').onclick = openSound;
     view.querySelector('.reset-btn').onclick = async () => {
       const ok = await modal({
         title: 'Her şeyi sıfırla?',
@@ -83,7 +84,51 @@
     homeBtn.hidden = false;
     history.replaceState(null, '', '#' + id);
     shell = new GameShell(def, view);
+    Music.play(id);
     window.scrollTo(0, 0);
+  }
+
+  // Ses paneli: efekt ve müzik için ayrı kaydırıcı, değiştikçe anında uygulanır
+  const soundBtn = document.getElementById('btnSound');
+  const soundIcon = () => { soundBtn.textContent = Store.data.sfxVol + Store.data.musicVol > 0 ? '🔊' : '🔇'; };
+  soundIcon();
+  soundBtn.onclick = openSound;
+
+  function openSound() {
+    Sound.play('click');
+    const row = (key, label, icon) => `
+      <div class="vol-row" data-k="${key}">
+        <button class="vol-mute" title="Kapat/Aç">${icon}</button>
+        <div class="vol-main"><label>${label} <b>${Math.round(Store.data[key] * 100)}</b></label>
+        <input type="range" min="0" max="100" step="1" value="${Math.round(Store.data[key] * 100)}"></div>
+      </div>`;
+    modal({
+      title: '🔊 Ses',
+      html: row('sfxVol', 'Efektler', '🎰') + row('musicVol', 'Müzik', '🎵') +
+        '<p class="dim">Her oyunun kendi müziği var; bedava dönüşte hızlanır.</p>',
+      buttons: [{ label: 'Tamam', value: true, cls: 'gold' }],
+      onOpen(m) {
+        m.querySelectorAll('.vol-row').forEach((r) => {
+          const key = r.dataset.k;
+          const input = r.querySelector('input');
+          const label = r.querySelector('label b');
+          let before = Store.data[key] || 0.6;
+          const set = (v) => {
+            Sound.setVolume(key === 'musicVol' ? 'music' : 'sfx', v);
+            input.value = Math.round(v * 100);
+            label.textContent = Math.round(v * 100);
+            r.classList.toggle('off', v === 0);
+            soundIcon();
+          };
+          r.classList.toggle('off', Store.data[key] === 0);
+          input.addEventListener('input', () => set(input.value / 100));
+          input.addEventListener('change', () => { if (key === 'sfxVol') Sound.play('win'); });
+          r.querySelector('.vol-mute').onclick = () => {
+            if (Store.data[key] > 0) { before = Store.data[key]; set(0); } else set(before || 0.6);
+          };
+        });
+      },
+    });
   }
 
   homeBtn.onclick = () => {

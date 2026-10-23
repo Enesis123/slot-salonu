@@ -464,3 +464,13 @@ main { max-width: 980px; margin: 0 auto; padding: 16px; }
 .theme-rush .grid-view .cell { z-index: 1; }
 .theme-rush .spot b { z-index: 3; }
 .theme-rush .spots { z-index: 2; }
+
+/* Ses paneli */
+.vol-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.vol-mute { width: 44px; height: 44px; border-radius: 12px; font-size: 22px; background: rgba(255, 255, 255, 0.08); border: 1px solid var(--line); flex: none; }
+.vol-row.off .vol-mute { opacity: 0.4; filter: grayscale(1); }
+.vol-main { flex: 1; }
+.vol-main label { display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.vol-main label b { color: var(--gold); font-variant-numeric: tabular-nums; }
+.vol-main input { width: 100%; accent-color: var(--gold); height: 28px; }
+#btnSound { font-size: 17px; }

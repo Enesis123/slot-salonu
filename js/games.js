@@ -225,6 +225,7 @@
       this.setControls();
       await this.banner(`${n} BEDAVA DÖNÜŞ!`, opts.tier ? `${opts.tier.icon} Şans ×${luck}` : (this.def.freeHint || ''));
       if (this.def.startFree) await this.def.startFree(this, luck);
+      Core.Music.setHot(true);
       this.gameEl.classList.add('in-free');
       while (this.fs.left > 0) {
         this.fs.left--;
@@ -258,6 +259,7 @@
       await celebrate('BEDAVA DÖNÜŞ BİTTİ', total,
         `${played} dönüşte ${(total / this.bet).toFixed(1)}× bahis` + (refund ? ` · garanti iade +${fmt(refund)}` : ''));
       if (this.def.endFree) this.def.endFree(this);
+      Core.Music.setHot(false);
       this.gameEl.classList.remove('in-free');
       this.fs = null;
       this.updateFs();

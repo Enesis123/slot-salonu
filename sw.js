@@ -1,7 +1,7 @@
 // Çevrimdışı çalışma: önce internetten taze dosya, bağlantı yoksa önbellek.
 // (Önbellek-önce eski sayfa ile yeni betiği karıştırıp oyunu bozuyordu.)
 // Dosya listesi değişince VERSION'ı artır.
-const VERSION = 'slot-v9';
+const VERSION = 'slot-v10';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/logic/common.js', 'js/logic/tumble.js', 'js/logic/megaways.js', 'js/logic/book.js', 'js/logic/classic.js', 'js/logic/throw.js', 'js/logic/rush.js', 'js/characters.js',

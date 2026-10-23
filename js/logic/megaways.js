@@ -28,11 +28,12 @@
   const pickEdge = L.picker([...SYMS, { ...SC, w: W.sc }]);
   const pickMid = L.picker([...SYMS, { ...SC, w: W.sc }, { ...WILD, w: W.wild }]);
   const pickEdgeFs = L.picker([...SYMS, { ...SC, w: W.scFs }]);
-  const pickMidFs = L.picker([...SYMS, { ...SC, w: W.scFs }, { ...WILD, w: W.wild }]);
+  // Şans katsayısı jokerin sıklığını çarpar
+  const pickMidFs = L.cached((luck) => L.picker([...SYMS, { ...SC, w: W.scFs }, { ...WILD, w: W.wild * (1 + (luck - 1) * 0.3) }]));
 
-  function make(rng, c, fs) {
+  function make(rng, c, fs, luck) {
     const edge = c === 0 || c === REELS - 1;
-    const p = fs ? (edge ? pickEdgeFs : pickMidFs) : (edge ? pickEdge : pickMid);
+    const p = fs ? (edge ? pickEdgeFs : pickMidFs(luck)) : (edge ? pickEdge : pickMid);
     return { id: L.uid(), s: p(rng).s };
   }
 
@@ -58,11 +59,12 @@
   }
 
   function spin(bet, rng, fs, state) {
+    const luck = (fs && state && state.luck) || 1;
     const heights = [];
     for (let c = 0; c < REELS; c++) heights.push(HEIGHTS(rng).v);
     let g = heights.map((h, c) => {
       const col = [];
-      for (let r = 0; r < h; r++) col.push(make(rng, c, fs));
+      for (let r = 0; r < h; r++) col.push(make(rng, c, fs, luck));
       return col;
     });
     let mult = fs ? state.mult : 1;
@@ -79,7 +81,7 @@
       g = g.map((col, c) => {
         const keep = col.filter((x) => !dead.has(x.id));
         const add = [];
-        for (let i = keep.length; i < heights[c]; i++) add.push(make(rng, c, fs));
+        for (let i = keep.length; i < heights[c]; i++) add.push(make(rng, c, fs, luck));
         return add.concat(keep);
       });
       if (fs) { mult++; state.mult = mult; }

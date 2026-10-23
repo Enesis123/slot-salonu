@@ -39,7 +39,7 @@
         <div class="cards">
           ${list.map((g) => `
             <button class="card-game theme-${g.id}" data-id="${g.id}">
-              <div class="card-art"><span>${g.icon}</span></div>
+              <div class="card-art">${g.art ? `<div class="card-char">${g.art}</div>` : `<span>${g.icon}</span>`}</div>
               <div class="card-body">
                 <h3>${g.title}</h3>
                 <p>${g.desc}</p>

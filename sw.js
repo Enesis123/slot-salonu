@@ -1,11 +1,12 @@
-// Çevrimdışı çalışma: dosyalar önbellekten gelir, arka planda güncellenir.
+// Çevrimdışı çalışma: önce internetten taze dosya, bağlantı yoksa önbellek.
+// (Önbellek-önce eski sayfa ile yeni betiği karıştırıp oyunu bozuyordu.)
 // Dosya listesi değişince VERSION'ı artır.
-const VERSION = 'slot-v4';
+const VERSION = 'slot-v8';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
-  'js/logic/common.js', 'js/logic/tumble.js', 'js/logic/megaways.js', 'js/logic/book.js', 'js/logic/classic.js',
+  'js/logic/common.js', 'js/logic/tumble.js', 'js/logic/megaways.js', 'js/logic/book.js', 'js/logic/classic.js', 'js/logic/throw.js', 'js/logic/rush.js', 'js/characters.js',
   'js/core.js', 'js/views.js', 'js/games.js', 'js/admin-config.js', 'js/app.js',
-  'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
+  'img/dede.webp', 'img/amazon.webp', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 
 self.addEventListener('install', (e) => {
@@ -20,12 +21,12 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  e.respondWith(caches.open(VERSION).then(async (cache) => {
-    const hit = await cache.match(e.request, { ignoreSearch: true });
-    const net = fetch(e.request).then((res) => {
-      if (res.ok) cache.put(e.request, res.clone());
-      return res;
-    }).catch(() => hit);
-    return hit || net;
-  }));
+  e.respondWith(
+    fetch(e.request, { cache: 'no-cache' })
+      .then((res) => {
+        if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(e.request, copy)); }
+        return res;
+      })
+      .catch(() => caches.match(e.request, { ignoreSearch: true })),
+  );
 });

@@ -27,21 +27,23 @@
   ].map(([v, w]) => ({ v, w }));
 
   const basePick = L.picker([...SYMS, { ...SC, w: W.sc }]);
-  const fsPick = L.picker([...SYMS, { ...SC, w: W.scFs }, { ...BOMB, w: W.bomb }]);
-  const bombPick = L.picker(BOMB_VALUES);
+  // Şans katsayısı (bonus satın almada) bomba sıklığını çarpar
+  const fsPick = L.cached((luck) => L.picker([...SYMS, { ...SC, w: W.scFs }, { ...BOMB, w: W.bomb * (1 + (luck - 1) * LUCK_K.bomb) }]));
+  const bombPickFor = L.cached((luck) => L.picker(L.luckyValues(BOMB_VALUES, luck)));
+  const LUCK_K = { bomb: 0.15 };
 
-  function make(rng, fs) {
-    const sym = (fs ? fsPick : basePick)(rng);
+  function make(rng, pick, luck = 1) {
+    const sym = pick(rng);
     const cell = { id: L.uid(), s: sym.s };
-    if (sym.s === 'bomb') cell.m = bombPick(rng).v;
+    if (sym.s === 'bomb') cell.m = bombPickFor(luck)(rng).v;
     return cell;
   }
 
-  function newGrid(rng, fs) {
+  function newGrid(rng, pick, luck) {
     const g = [];
     for (let c = 0; c < COLS; c++) {
       const col = [];
-      for (let r = 0; r < ROWS; r++) col.push(make(rng, fs));
+      for (let r = 0; r < ROWS; r++) col.push(make(rng, pick, luck));
       g.push(col);
     }
     return g;
@@ -64,8 +66,10 @@
     return wins;
   }
 
-  function spin(bet, rng, fs) {
-    let g = newGrid(rng, fs);
+  function spin(bet, rng, fs, state) {
+    const luck = (fs && state && state.luck) || 1;
+    const pick = fs ? fsPick(luck) : basePick;
+    let g = newGrid(rng, pick, luck);
     const steps = [];
     let tumbleWin = 0;
     for (;;) {
@@ -80,7 +84,7 @@
       g = g.map((col) => {
         const keep = col.filter((c) => !dead.has(c.id));
         const add = [];
-        for (let i = keep.length; i < ROWS; i++) add.push(make(rng, fs));
+        for (let i = keep.length; i < ROWS; i++) add.push(make(rng, pick, luck));
         return add.concat(keep);
       });
     }
@@ -102,6 +106,6 @@
 
   L.tumble = {
     COLS, ROWS, SYMS, SC, BOMB, SC_PAY, BY: L.bySymbol([...SYMS, SC, BOMB]),
-    FS: 10, BUY: 65, spin, randomGrid: (rng) => newGrid(rng, false),
+    FS: 10, BUY: 65, spin, randomGrid: (rng) => newGrid(rng, basePick),
   };
 })(typeof window !== 'undefined' ? window : globalThis);

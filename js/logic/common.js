@@ -19,6 +19,18 @@
     };
   };
 
+  // Anahtara göre bir kez hesaplayıp saklar (şans katsayısına özel seçiciler için)
+  L.cached = function (fn) {
+    const m = new Map();
+    return (k) => { if (!m.has(k)) m.set(k, fn(k)); return m.get(k); };
+  };
+
+  // Şans katsayısı: listenin sonundaki (büyük) değerlerin ağırlığını kademeli artırır
+  L.luckyValues = function (values, luck) {
+    const n = values.length - 1;
+    return values.map((x, i) => ({ ...x, w: x.w * Math.pow(luck, (2 * i) / n) }));
+  };
+
   L.bySymbol = function (list) {
     const map = {};
     for (const it of list) map[it.s] = it;

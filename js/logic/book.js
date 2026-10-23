@@ -23,13 +23,19 @@
   const BOOK = { s: 'book', e: '📕', name: 'Kitap', pay: { 3: 2, 4: 20, 5: 200 } };
   const W = { book: 1.5 };
   const pick = L.picker([...SYMS, { ...BOOK, w: W.book }]);
+  // Bedava dönüşte şans katsayısı özel sembolün sıklığını çarpar
+  const fsPick = L.cached((key) => {
+    const [special, luck] = key.split('|');
+    return L.picker([...SYMS.map((x) => (x.s === special ? { ...x, w: x.w * (1 + (+luck - 1) * 0.15) } : x)), { ...BOOK, w: W.book }]);
+  });
 
   function spin(bet, rng, fs, state) {
     const lb = bet / NLINES;
+    const p = fs && state && state.special ? fsPick(state.special + '|' + (state.luck || 1)) : pick;
     const g = [];
     for (let c = 0; c < REELS; c++) {
       const col = [];
-      for (let r = 0; r < ROWS; r++) col.push(pick(rng).s);
+      for (let r = 0; r < ROWS; r++) col.push(p(rng).s);
       g.push(col);
     }
     const lineWins = [];

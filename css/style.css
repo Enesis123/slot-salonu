@@ -354,3 +354,7 @@ main { max-width: 980px; margin: 0 auto; padding: 16px; }
 }
 .adm-quick { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
 .balance { cursor: pointer; }
+
+.adm-err { min-height: 18px; margin: 8px 0 0 !important; color: var(--red) !important; }
+.modal.shake { animation: shake 0.35s; }
+@keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }

@@ -1,10 +1,10 @@
 // Çevrimdışı çalışma: dosyalar önbellekten gelir, arka planda güncellenir.
 // Dosya listesi değişince VERSION'ı artır.
-const VERSION = 'slot-v3';
+const VERSION = 'slot-v4';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/logic/common.js', 'js/logic/tumble.js', 'js/logic/megaways.js', 'js/logic/book.js', 'js/logic/classic.js',
-  'js/core.js', 'js/views.js', 'js/games.js', 'js/app.js',
+  'js/core.js', 'js/views.js', 'js/games.js', 'js/admin-config.js', 'js/app.js',
   'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 

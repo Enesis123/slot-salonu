@@ -97,16 +97,91 @@
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
-  // Gizli admin paneli: bakiyeye 2 saniye içinde 5 kez dokun
+  // Gizli admin paneli: bakiyeye 2 saniye içinde 5 kez dokun, sonra şifre
   let taps = [];
   document.querySelector('.balance').addEventListener('click', () => {
     const now = Date.now();
     taps = taps.filter((t) => now - t < 2000).concat(now);
-    if (taps.length >= 5) { taps = []; openAdmin(); }
+    if (taps.length >= 5) {
+      taps = [];
+      if (shell && (shell.busy || shell.fs)) { toast('Dönüş bitince açabilirsin'); return; }
+      unlockAdmin().then((ok) => { if (ok) openAdmin(); });
+    }
   });
 
+  const SESSION_KEY = 'slotSalonu.admin';
+  const LOCK_KEY = 'slotSalonu.adminLock';
+  const SESSION_MS = 30 * 60 * 1000;
+  const MAX_FAILS = 5;
+  const LOCK_MS = 5 * 60 * 1000;
+
+  const readJson = (st, k) => { try { return JSON.parse(st.getItem(k)) || null; } catch (e) { return null; } };
+  const writeJson = (st, k, v) => { try { st.setItem(k, JSON.stringify(v)); } catch (e) { /* kayıt yok */ } };
+
+  async function checkPassword(pass) {
+    const key = window.ADMIN_KEY;
+    const enc = new TextEncoder();
+    const salt = new Uint8Array(key.salt.match(/../g).map((h) => parseInt(h, 16)));
+    const base = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: key.iter, hash: 'SHA-256' }, base, 256);
+    const hex = [...new Uint8Array(bits)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    return hex === key.hash;
+  }
+
+  // Doğru şifreden sonra 30 dakika boyunca bu sekmede tekrar sormaz
+  function unlockAdmin() {
+    const key = window.ADMIN_KEY;
+    if (!key) { toast('Admin şifresi henüz ayarlanmamış'); return Promise.resolve(false); }
+    if (!(window.crypto && crypto.subtle)) { toast('Admin paneli sadece siteden açılır'); return Promise.resolve(false); }
+    const sess = readJson(sessionStorage, SESSION_KEY);
+    if (sess && sess.hash === key.hash && Date.now() < sess.until) return Promise.resolve(true);
+    const lock = readJson(localStorage, LOCK_KEY) || { fails: 0, until: 0 };
+    if (Date.now() < lock.until) {
+      toast(`Çok fazla yanlış deneme. ${Math.ceil((lock.until - Date.now()) / 60000)} dk bekle`);
+      return Promise.resolve(false);
+    }
+    return modal({
+      title: '🔒 Admin girişi',
+      html: `<input class="adm-input adm-pass" type="password" autocomplete="current-password" placeholder="Şifre">
+        <p class="adm-err dim"></p>`,
+      buttons: [{ label: 'Vazgeç', value: false, cls: 'ghost' }, { label: 'Gir', value: true, cls: 'gold' }],
+      onOpen(m, close) {
+        const input = m.querySelector('.adm-pass');
+        const err = m.querySelector('.adm-err');
+        const go = m.querySelector('.btn.gold');
+        go.onclick = async () => {
+          if (!input.value) return;
+          go.disabled = true;
+          const ok = await checkPassword(input.value);
+          go.disabled = false;
+          if (ok) {
+            writeJson(localStorage, LOCK_KEY, { fails: 0, until: 0 });
+            writeJson(sessionStorage, SESSION_KEY, { hash: key.hash, until: Date.now() + SESSION_MS });
+            close(true);
+            return;
+          }
+          lock.fails++;
+          if (lock.fails >= MAX_FAILS) {
+            writeJson(localStorage, LOCK_KEY, { fails: 0, until: Date.now() + LOCK_MS });
+            toast('Çok fazla yanlış deneme. 5 dk kilitlendi');
+            close(false);
+            return;
+          }
+          writeJson(localStorage, LOCK_KEY, lock);
+          Sound.play('lose');
+          err.textContent = `Yanlış şifre. Kalan hak: ${MAX_FAILS - lock.fails}`;
+          input.value = '';
+          m.querySelector('.modal').classList.remove('shake'); void m.offsetWidth;
+          m.querySelector('.modal').classList.add('shake');
+          input.focus();
+        };
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go.click(); });
+        setTimeout(() => input.focus(), 50);
+      },
+    });
+  }
+
   function openAdmin() {
-    if (shell && (shell.busy || shell.fs)) { toast('Dönüş bitince açabilirsin'); return; }
     Sound.play('click');
     modal({
       title: '🛠️ Admin',

@@ -26,9 +26,9 @@
     [12, 4], [15, 3], [20, 2], [25, 1.5], [50, 0.6], [100, 0.25],
   ].map(([v, w]) => ({ v, w }));
 
-  const basePick = L.picker([...SYMS, { ...SC, w: W.sc }]);
+  const basePick = L.picker([...SYMS, { ...SC, w: W.sc * L.SC_BOOST }]);
   // Şans katsayısı (bonus satın almada) bomba sıklığını çarpar
-  const fsPick = L.cached((luck) => L.picker([...SYMS, { ...SC, w: W.scFs }, { ...BOMB, w: W.bomb * (1 + (luck - 1) * LUCK_K.bomb) }]));
+  const fsPick = L.cached((luck) => L.picker([...SYMS, { ...SC, w: W.scFs * L.SC_BOOST }, { ...BOMB, w: W.bomb * (1 + (luck - 1) * LUCK_K.bomb) }]));
   const bombPickFor = L.cached((luck) => L.picker(L.luckyValues(BOMB_VALUES, luck)));
   const LUCK_K = { bomb: 0.15 };
 
@@ -61,7 +61,7 @@
       if (!ids || ids.length < 8) continue;
       const n = ids.length;
       const tier = n >= 12 ? 2 : n >= 10 ? 1 : 0;
-      wins.push({ s: sym.s, n, ids, amount: sym.pay[tier] * bet });
+      wins.push({ s: sym.s, n, ids, amount: sym.pay[tier] * bet * L.GEN });
     }
     return wins;
   }
@@ -95,7 +95,7 @@
       if (cell.s === 'bomb') { mult += cell.m; bombIds.push(cell.id); }
     }
     const applied = fs && tumbleWin > 0 && mult > 0;
-    const scatterWin = (SC_PAY[Math.min(scN, 6)] || 0) * bet;
+    const scatterWin = (SC_PAY[Math.min(scN, 6)] || 0) * bet * L.GEN;
     const fsAward = fs ? (scN >= 3 ? 5 : 0) : (scN >= 4 ? 10 : 0);
     return {
       steps, tumbleWin, mult: applied ? mult : 0, bombIds: applied ? bombIds : [],

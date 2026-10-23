@@ -25,11 +25,11 @@
   const SCALE = 0.078;
 
   // Joker yalnız 2-5. makaralarda çıkar
-  const pickEdge = L.picker([...SYMS, { ...SC, w: W.sc }]);
-  const pickMid = L.picker([...SYMS, { ...SC, w: W.sc }, { ...WILD, w: W.wild }]);
-  const pickEdgeFs = L.picker([...SYMS, { ...SC, w: W.scFs }]);
+  const pickEdge = L.picker([...SYMS, { ...SC, w: W.sc * L.SC_BOOST }]);
+  const pickMid = L.picker([...SYMS, { ...SC, w: W.sc * L.SC_BOOST }, { ...WILD, w: W.wild }]);
+  const pickEdgeFs = L.picker([...SYMS, { ...SC, w: W.scFs * L.SC_BOOST }]);
   // Şans katsayısı jokerin sıklığını çarpar
-  const pickMidFs = L.cached((luck) => L.picker([...SYMS, { ...SC, w: W.scFs }, { ...WILD, w: W.wild * (1 + (luck - 1) * 0.3) }]));
+  const pickMidFs = L.cached((luck) => L.picker([...SYMS, { ...SC, w: W.scFs * L.SC_BOOST }, { ...WILD, w: W.wild * (1 + (luck - 1) * 0.3) }]));
 
   function make(rng, c, fs, luck) {
     const edge = c === 0 || c === REELS - 1;
@@ -52,7 +52,7 @@
       }
       if (k >= 3) {
         // Sondaki eşleşmeyen makaranın hücreleri ids'e girmedi; sadece ilk k makara toplandı
-        wins.push({ s: sym.s, k, ways, ids, amount: sym.pay[k - 3] * ways * bet * SCALE });
+        wins.push({ s: sym.s, k, ways, ids, amount: sym.pay[k - 3] * ways * bet * SCALE * L.GEN });
       }
     }
     return wins;

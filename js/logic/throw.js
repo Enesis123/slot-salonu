@@ -21,8 +21,8 @@
     const SYMS = theme.syms.map((x, i) => ({ ...x, pay: PAYS[i], w: WEIGHTS[i] }));
     const SC = { s: 'sc', ...theme.sc };
     const ORB = { s: 'orb', e: '', ...theme.orb };
-    const basePick = L.picker([...SYMS, { ...SC, w: W.sc }, { ...ORB, w: W.orb }]);
-    const fsPick = L.cached((luck) => L.picker([...SYMS, { ...SC, w: W.scFs }, { ...ORB, w: W.orbFs * (1 + (luck - 1) * LUCK_K.orb) }]));
+    const basePick = L.picker([...SYMS, { ...SC, w: W.sc * L.SC_BOOST }, { ...ORB, w: W.orb }]);
+    const fsPick = L.cached((luck) => L.picker([...SYMS, { ...SC, w: W.scFs * L.SC_BOOST }, { ...ORB, w: W.orbFs * (1 + (luck - 1) * LUCK_K.orb) }]));
 
     function make(rng, pick, luck = 1) {
       const sym = pick(rng);
@@ -52,7 +52,7 @@
         const ids = groups[sym.s];
         if (!ids || ids.length < 8) continue;
         const n = ids.length;
-        wins.push({ s: sym.s, n, ids, amount: sym.pay[n >= 12 ? 2 : n >= 10 ? 1 : 0] * bet });
+        wins.push({ s: sym.s, n, ids, amount: sym.pay[n >= 12 ? 2 : n >= 10 ? 1 : 0] * bet * L.GEN });
       }
       return wins;
     }
@@ -90,7 +90,7 @@
       if (applied) {
         if (fs) { state.total = (state.total || 0) + orbSum; mult = state.total; } else mult = orbSum;
       }
-      const scatterWin = (SC_PAY[Math.min(scN, 6)] || 0) * bet;
+      const scatterWin = (SC_PAY[Math.min(scN, 6)] || 0) * bet * L.GEN;
       const fsAward = fs ? (scN >= 3 ? 5 : 0) : (scN >= 4 ? 15 : 0);
       return {
         steps, tumbleWin, orbSum: applied ? orbSum : 0, orbIds: applied ? orbIds : [], mult,

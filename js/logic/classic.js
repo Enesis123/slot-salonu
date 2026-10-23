@@ -14,6 +14,8 @@
     { s: 'plum',   e: '🍇',  name: 'Üzüm',   pay: { 3: 20 },  w: 6 },
     { s: 'cherry', e: '🍒',  name: 'Kiraz',  pay: { 2: 3, 3: 15 }, w: 7 },
   ];
+  // Bonusu olmadığı için ortak cömertlik çarpanının üstüne ek pay (hedef ≈ %105)
+  const EXTRA = 1.14;
   const pick = L.picker(SYMS);
   const BY = L.bySymbol(SYMS);
 
@@ -31,7 +33,7 @@
       let n = 1;
       while (n < REELS && g[n][ln[n]] === first) n++;
       const p = BY[first].pay[n];
-      if (p) lineWins.push({ line: li, s: first, n, amount: p * lb, cells: ln.slice(0, n).map((r, c) => [c, r]) });
+      if (p) lineWins.push({ line: li, s: first, n, amount: p * lb * L.GEN * EXTRA, cells: ln.slice(0, n).map((r, c) => [c, r]) });
     });
     const total = lineWins.reduce((a, w) => a + w.amount, 0);
     return { grid: g, lineWins, scN: 0, scCells: [], scatterWin: 0, expand: null, fsAward: 0, total: Math.round(total) };

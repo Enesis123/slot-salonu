@@ -3,6 +3,11 @@
   'use strict';
   const L = (root.SlotLogic = root.SlotLogic || {});
 
+  // Cömertlik ayarı: tüm kazançlar GEN ile çarpılır, bonus sembolleri SC_BOOST kadar sık gelir.
+  // Teorik geri ödeme ≈ %105 (sanal para, oyuncu uzun vadede biraz kazansın). Değişince tools/sim.js çalıştır.
+  L.GEN = 0.955;
+  L.SC_BOOST = 1.1;
+
   // Her sembol örneğine benzersiz kimlik: düşme animasyonu bunu takip ediyor
   let uid = 0;
   L.uid = () => ++uid;

@@ -24,10 +24,10 @@
   const FS_TABLE = { 3: 10, 4: 12, 5: 15, 6: 20, 7: 30 };
   SYMS.forEach((x) => { x.pay = ROW.map((p) => p * x.k * SCALE); });
 
-  const basePick = L.picker([...SYMS, { ...SC, w: W.sc }]);
+  const basePick = L.picker([...SYMS, { ...SC, w: W.sc * L.SC_BOOST }]);
   // Bedava dönüşte ucuz şekerler daha sık: daha çok küme, çarpanlı kareler daha hızlı büyür
   const FS_BOOST = [1, 1, 1, 1.22, 1.6, 1.95, 2.3];
-  const fsPick = L.picker([...SYMS.map((x, i) => ({ ...x, w: x.w * FS_BOOST[i] })), { ...SC, w: W.scFs }]);
+  const fsPick = L.picker([...SYMS.map((x, i) => ({ ...x, w: x.w * FS_BOOST[i] })), { ...SC, w: W.scFs * L.SC_BOOST }]);
   const make = (rng, pick) => ({ id: L.uid(), s: pick(rng).s });
   const payFor = (sym, n) => sym.pay[Math.min(n, 15) - 5];
   const BY = L.bySymbol([...SYMS, SC]);
@@ -92,7 +92,7 @@
       const wins = found.map(({ s, cells }) => {
         let mult = 0;
         for (const [c, r] of cells) if (spots[c][r] >= 2) mult += spots[c][r];
-        const base = payFor(BY[s], cells.length) * bet;
+        const base = payFor(BY[s], cells.length) * bet * L.GEN;
         return { s, n: cells.length, cells, ids: cells.map(([c, r]) => g[c][r].id), mult, base, amount: base * (mult || 1) };
       });
       const win = wins.reduce((a, w) => a + w.amount, 0);

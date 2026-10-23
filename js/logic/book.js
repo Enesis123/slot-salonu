@@ -22,11 +22,11 @@
   ];
   const BOOK = { s: 'book', e: '📕', name: 'Kitap', pay: { 3: 2, 4: 20, 5: 200 } };
   const W = { book: 1.5 };
-  const pick = L.picker([...SYMS, { ...BOOK, w: W.book }]);
+  const pick = L.picker([...SYMS, { ...BOOK, w: W.book * L.SC_BOOST }]);
   // Bedava dönüşte şans katsayısı özel sembolün sıklığını çarpar
   const fsPick = L.cached((key) => {
     const [special, luck] = key.split('|');
-    return L.picker([...SYMS.map((x) => (x.s === special ? { ...x, w: x.w * (1 + (+luck - 1) * 0.15) } : x)), { ...BOOK, w: W.book }]);
+    return L.picker([...SYMS.map((x) => (x.s === special ? { ...x, w: x.w * (1 + (+luck - 1) * 0.15) } : x)), { ...BOOK, w: W.book * L.SC_BOOST }]);
   });
 
   function spin(bet, rng, fs, state) {
@@ -49,7 +49,7 @@
         }
         const p = real && sym.pay[n];
         if (!p) continue;
-        const amount = p * lb;
+        const amount = p * lb * L.GEN;
         if (!best || amount > best.amount) {
           best = { line: li, s: sym.s, n, amount, cells: ln.slice(0, n).map((r, c) => [c, r]) };
         }
@@ -59,14 +59,14 @@
     const scCells = [];
     g.forEach((col, c) => col.forEach((s, r) => { if (s === 'book') scCells.push([c, r]); }));
     const scN = scCells.length;
-    const scatterWin = (BOOK.pay[Math.min(scN, 5)] || 0) * bet;
+    const scatterWin = (BOOK.pay[Math.min(scN, 5)] || 0) * bet * L.GEN;
     let expand = null;
     if (fs && state && state.special) {
       const sp = BY[state.special];
       const reels = [];
       g.forEach((col, c) => { if (col.includes(sp.s)) reels.push(c); });
       const p = sp.pay[reels.length];
-      if (p) expand = { s: sp.s, reels, n: reels.length, amount: p * lb * NLINES };
+      if (p) expand = { s: sp.s, reels, n: reels.length, amount: p * lb * NLINES * L.GEN };
     }
     const total = lineWins.reduce((a, w) => a + w.amount, 0) + scatterWin + (expand ? expand.amount : 0);
     return { grid: g, lineWins, scN, scCells, scatterWin, expand, fsAward: scN >= 3 ? 10 : 0, total: Math.round(total) };

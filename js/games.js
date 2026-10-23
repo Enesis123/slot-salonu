@@ -466,7 +466,7 @@
     id: 'sweet', title: 'Şeker Patlaması', icon: '🍭', ar: 6 / 5,
     desc: '6×5 alan. Aynı sembolden 8 tane olunca patlar, yenileri yağar. Bedava dönüşte çarpan bombaları ×100’e kadar.',
     tags: ['Düşen semboller', 'Çarpan bombası', 'Bonus al'],
-    buy: { costs: [65, 80, 95, 125], count: T.FS },
+    buy: { costs: [55, 70, 85, 110], count: T.FS },
     freeHint: 'Çarpan bombaları devrede 💣',
     state: { luck: 1 },
     startFree(shell, luck) { this.state = { luck }; },
@@ -490,7 +490,7 @@
         ${payTable(T.SYMS.map((s) => [s.e, ...s.pay.map((p) => fmt2(p * bet))]), ['', '8-9', '10-11', '12+'])}
         <p>${T.SC.e} <b>Gökkuşağı</b> her yerden sayılır: 4 tane → ${fmt(3 * bet)}, 5 → ${fmt(5 * bet)}, 6 → ${fmt(100 * bet)} ve <b>${T.FS} bedava dönüş</b>. Bedava dönüşte 3 gökkuşağı +5 dönüş verir.</p>
         <p>💣 <b>Çarpan bombası</b> yalnız bedava dönüşte gelir (×2 – ×100). Düşüşler bitince ekrandaki bombalar toplanır ve o dönüşün kazancıyla çarpılır.</p>
-        <p class="dim">Bonus al: ${this.buy.costs.join(' / ')}× bahis (Bronz → Elmas). Teorik geri ödeme ≈ %96.</p>`;
+        <p class="dim">Bonus al: ${this.buy.costs.join(' / ')}× bahis (Bronz → Elmas). Teorik geri ödeme ≈ %105 (cömert ayar).</p>`;
     },
   };
 
@@ -500,7 +500,7 @@
     id: 'mine', title: 'Altın Madeni', icon: '⛏️', ar: 6 / 5,
     desc: 'Her dönüşte makara boyları değişir, 117.649 yola kadar. Kazananlar patlar; bedava dönüşte çarpan her patlamada büyür.',
     tags: ['Megaways', 'Büyüyen çarpan', 'Bonus al'],
-    buy: { costs: [105, 120, 155, 225], count: M.FS },
+    buy: { costs: [90, 105, 130, 200], count: M.FS },
     freeHint: 'Her patlamada çarpan +1',
     state: { mult: 1 },
     mount(stage, shell) {
@@ -530,7 +530,7 @@
         <p class="dim">Tablo: yol başına ödeme.</p>
         <p>${M.WILD.e} <b>Joker</b> 2-5. makaralarda çıkar, her sembolün yerine geçer.</p>
         <p>${M.SC.e} <b>4+ elmas</b> → 12 bedava dönüş (her ek elmas +5). Bedava dönüşte her patlama çarpanı 1 artırır ve dönüşler boyunca sıfırlanmaz. 3 elmas +5 dönüş.</p>
-        <p class="dim">Bonus al: ${this.buy.costs.join(' / ')}× bahis (Bronz → Elmas). Teorik geri ödeme ≈ %96.</p>`;
+        <p class="dim">Bonus al: ${this.buy.costs.join(' / ')}× bahis (Bronz → Elmas). Teorik geri ödeme ≈ %105 (cömert ayar).</p>`;
     },
   };
 
@@ -545,7 +545,7 @@
     desc: '5 makara, 10 çizgi. Kitap hem joker hem scatter. Bedava dönüşte özel sembol bütün makarayı kaplar.',
     tags: ['5 makara', 'Genişleyen sembol', 'Bonus al'],
     gamble: true,
-    buy: { costs: [55, 65, 80, 115], count: B.FS },
+    buy: { costs: [45, 55, 70, 100], count: B.FS },
     freeHint: 'Kitap özel sembolü seçecek…',
     state: null,
     mount(stage) {
@@ -619,7 +619,7 @@
         <p>📕 <b>Kitap</b> her sembolün yerine geçer ve her yerden sayılır: 3 → ${fmt(2 * bet)}, 4 → ${fmt(20 * bet)}, 5 → ${fmt(200 * bet)} ve <b>10 bedava dönüş</b> (bedava dönüşte de yeniden tetiklenir).</p>
         <p>Bedava dönüş başında rastgele bir <b>özel sembol</b> seçilir. Yeterince makarada çıkarsa (bitişik olmasa da) o makaraları baştan sona kaplar ve 10 çizginin hepsinden öder.</p>
         <p>🃏 <b>Risk:</b> kazançtan sonra kartın rengini bilirsen ikiye katlanır (5 kereye kadar).</p>
-        <p class="dim">Bonus al: ${this.buy.costs.join(' / ')}× bahis (Bronz → Elmas). Teorik geri ödeme ≈ %97.</p>`;
+        <p class="dim">Bonus al: ${this.buy.costs.join(' / ')}× bahis (Bronz → Elmas). Teorik geri ödeme ≈ %105 (cömert ayar).</p>`;
     },
   };
 
@@ -654,7 +654,7 @@
       return `<p>5 çizgi: orta, üst, alt ve iki çapraz. Çizgi bahsi = ${fmt(lb)}. Üç aynı sembol soldan sağa dizilmeli; kiraz ilk iki makarada da öder.</p>
         ${payTable(C.SYMS.map((s) => [classicSym(s.s), s.pay[2] ? fmt(s.pay[2] * lb) : '–', fmt(s.pay[3] * lb)]), ['', '2', '3'])}
         <p>🃏 <b>Risk:</b> kazançtan sonra kartın rengini bilirsen ikiye katlanır (5 kereye kadar).</p>
-        <p class="dim">Teorik geri ödeme ≈ %96.</p>`;
+        <p class="dim">Teorik geri ödeme ≈ %105 (cömert ayar).</p>`;
     },
   };
 
@@ -663,7 +663,7 @@
     return {
       id, title, icon, ar: 6 / 5, desc, tags, freeHint,
       art: window.Characters.html(char),
-      buy: { costs: [65, 95, 115, 175], count: G.FS },
+      buy: { costs: [55, 75, 105, 150], count: G.FS },
       state: { total: 0, luck: 1 },
       render(cell) {
         if (cell.s === 'orb') return `<div class="orb orb-${id} sealed"><b>×${cell.m}</b></div>`;
@@ -736,7 +736,7 @@
           ${payTable(G.SYMS.map((s) => [s.e, ...s.pay.map((p) => fmt2(p * bet))]), ['', '8-9', '10-11', '12+'])}
           <p>${proj} <b>${G.ORB.name}</b>: ${title.split(' ')[0]} düşüşler bitince kürelere fırlatır, ×2 – ×500 arası çarpanlar açılır. Dönüşte kazanç varsa hepsi toplanıp kazançla çarpılır.</p>
           <p>${G.SC.e} <b>4+ ${G.SC.name}</b> → ${fmt(3 * bet)}–${fmt(100 * bet)} ve <b>${G.FS} bedava dönüş</b>. Bedava dönüşte çarpanlar <b>toplam çarpana eklenir ve sıfırlanmaz</b>; 3 ${G.SC.e} +5 dönüş.</p>
-          <p class="dim">Bonus al: ${this.buy.costs.join(' / ')}× bahis (Bronz → Elmas). Teorik geri ödeme ≈ %96.</p>`;
+          <p class="dim">Bonus al: ${this.buy.costs.join(' / ')}× bahis (Bronz → Elmas). Teorik geri ödeme ≈ %105 (cömert ayar).</p>`;
       },
     };
   }
@@ -760,7 +760,7 @@
     id: 'rush', title: 'Şeker Fırtınası', icon: '🍡', ar: 1,
     desc: '7×7 alan, yan yana 5+ şeker küme olur. Patlayan kareler işaretlenir; aynı kare tekrar patladıkça çarpan ×2’den ×1024’e kadar ikiye katlanır.',
     tags: ['Küme ödeme', '×1024 kareler', 'Bonus al'],
-    buy: { costs: [90, 100, 115, 160], count: R.FS },
+    buy: { costs: [75, 90, 105, 135], count: R.FS },
     freeHint: 'Çarpanlı kareler bonus boyunca kalıyor 🍬',
     state: { luck: 1, spots: null },
     mount(stage, shell) {
@@ -814,7 +814,7 @@
         ${payTable(R.SYMS.map((s) => [s.e, ...cols.map((n) => fmt2(s.pay[n - 5] * bet))]), ['', '5', '7', '9', '11', '13', '15+'])}
         <p><b>Çarpanlı kareler:</b> Bir karede şeker patlayınca kare işaretlenir. Aynı kare yeniden patlarsa <b>×2</b> olur, sonra her patlamada ikiye katlanır: ×4, ×8 … <b>×1024</b>. Kümenin içindeki çarpanlar toplanıp kümenin kazancıyla çarpılır.</p>
         <p>${R.SC.e} <b>3+ yıldız</b> → bedava dönüş (3: 10, 4: 12, 5: 15, 6: 20, 7: 30). Normal oyunda kareler her dönüşte silinir; <b>bedava dönüşte bonus bitene kadar kalır</b>.</p>
-        <p class="dim">Bonus al: ${this.buy.costs.join(' / ')}× bahis (Bronz → Elmas). Pahalı paketler çarpanlı karelerle başlar. Teorik geri ödeme ≈ %96.</p>`;
+        <p class="dim">Bonus al: ${this.buy.costs.join(' / ')}× bahis (Bronz → Elmas). Pahalı paketler çarpanlı karelerle başlar. Teorik geri ödeme ≈ %105 (cömert ayar).</p>`;
     },
   };
 

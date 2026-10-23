@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#14061f">
+  <title>Slot Salonu</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎰</text></svg>">
+  <meta name="apple-mobile-web-app-title" content="Slot Salonu">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <button id="btnHome" class="icon-btn home" hidden aria-label="Lobiye dön">‹</button>
+    <div class="brand">🎰 <span>Slot Salonu</span></div>
+    <div class="jackpot"><small>JACKPOT</small><b id="jpVal">0</b></div>
+    <div class="balance"><small>BAKİYE</small><b><span>🪙</span> <span id="balVal">0</span></b></div>
+  </header>
+  <main id="view"></main>
+
+  <script src="js/logic/common.js"></script>
+  <script src="js/logic/tumble.js"></script>
+  <script src="js/logic/megaways.js"></script>
+  <script src="js/logic/book.js"></script>
+  <script src="js/logic/classic.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
